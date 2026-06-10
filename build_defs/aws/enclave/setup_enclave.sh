@@ -46,6 +46,19 @@ sudo systemctl enable fluent-bit
 # Enable the configuration service (installed by RPM)
 sudo systemctl enable configure-fluent-bit.service
 
+sudo yum install amazon-cloudwatch-agent -y
+
+# Configure Amazon CloudWatch Agent if config is present (pre-configure at build time)
+if [ -f /opt/google/metrics/amazon-cloudwatch-agent.json ] && [ -f /opt/google/metrics/prometheus.yaml ]; then
+  sudo cp /opt/google/metrics/prometheus.yaml /opt/aws/amazon-cloudwatch-agent/etc/prometheus.yaml
+  sudo cp /opt/google/metrics/amazon-cloudwatch-agent.json /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+  sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+      -a fetch-config \
+      -m ec2 \
+      -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+  sudo systemctl enable amazon-cloudwatch-agent
+fi
+
 sudo systemctl enable vsockproxy
 
 sudo systemctl enable enclave
