@@ -21,6 +21,11 @@ packer {
   }
 }
 
+variable "git_commit" {
+  type    = string
+  default = "unknown"
+}
+
 locals {
   //AMI naming does not support some special characters
   timestamp = formatdate("YYYY-MM-DD'T'hh-mm-ssZ", timestamp())
@@ -66,6 +71,11 @@ source "amazon-ebs" "sample-ami" {
     http_put_response_hop_limit = 1
   }
   imds_support  = "v2.0" # enforces imdsv2 support on the resulting AMI
+
+  tags = {
+    Name      = "{ami_name}"
+    GitCommit = "${var.git_commit}"
+  }
 }
 
 build {

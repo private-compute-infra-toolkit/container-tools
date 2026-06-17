@@ -88,6 +88,21 @@ def _packer_worker_ami_impl(ctx):
     script_template = """#!/bin/bash
 set -e
 echo "Preparing to run Packer ({packer})"
+
+remote_url="$(git remote get-url origin 2>/dev/null || echo "")"
+commit_hash="$(git rev-parse HEAD 2>/dev/null || echo "")"
+dirty="$([[ -n "$(git status --porcelain 2>/dev/null)" ]] && echo "-dirty" || echo "")"
+
+GIT_COMMIT="unknown"
+if [[ -n "${{remote_url}}" && -n "${{commit_hash}}" ]]; then
+  if [[ "${{remote_url}}" =~ ^rpc://(.*)$ ]]; then
+    GIT_COMMIT="https://source.corp.google.com/h/${{BASH_REMATCH[1]%.git}}/+/${{commit_hash}}${{dirty}}"
+  elif [[ "${{remote_url}}" =~ github\\.com[:/]([^/]+)/([^/]+)$ ]]; then
+    GIT_COMMIT="https://github.com/${{BASH_REMATCH[1]}}/${{BASH_REMATCH[2]%.git}}/commit/${{commit_hash}}${{dirty}}"
+  fi
+fi
+echo "Resolved Git Commit: ${{GIT_COMMIT}}"
+
 echo "Packer config:"
 echo "-------------------------"
 cat {packer_file}
@@ -95,7 +110,7 @@ echo "-------------------------"
 
 {packer} version
 {packer} init {packer_file}
-{packer} build {packer_file}
+{packer} build -var "git_commit=${{GIT_COMMIT}}" {packer_file}
 """
 
     script = ctx.actions.declare_file("%s_script.sh" % ctx.label.name)
