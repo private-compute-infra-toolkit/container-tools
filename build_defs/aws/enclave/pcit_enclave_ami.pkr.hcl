@@ -21,9 +21,9 @@ packer {
   }
 }
 
-variable "git_commit" {
-  type    = string
-  default = "unknown"
+variable "extra_tags" {
+  type    = map(string)
+  default = {}
 }
 
 locals {
@@ -72,10 +72,12 @@ source "amazon-ebs" "sample-ami" {
   }
   imds_support  = "v2.0" # enforces imdsv2 support on the resulting AMI
 
-  tags = {
-    Name      = "{ami_name}"
-    GitCommit = "${var.git_commit}"
-  }
+  tags = merge(
+    {
+      Name = "{ami_name}"
+    },
+    var.extra_tags
+  )
 }
 
 build {
